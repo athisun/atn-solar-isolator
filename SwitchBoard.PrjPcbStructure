@@ -1,1 +1,3 @@
 Record=TopLevelDocument|FileName=Sheet1.SchDoc
+Record=SheetSymbol|SourceDocument=Sheet1.SchDoc|Designator=U_Sheet2|SchDesignator=U_Sheet2|FileName=Switch.SchDoc|SymbolType=Normal|RawFileName=Switch.SchDoc|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol|RevisionGUID= |ItemGUID= |VaultGUID= 
+Record=SheetSymbol|SourceDocument=Sheet1.SchDoc|Designator=U_Sheet2|SchDesignator=U_Sheet2|FileName=Switch.SchDoc|SymbolType=Normal|RawFileName=Switch.SchDoc|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol|RevisionGUID= |ItemGUID= |VaultGUID= 
