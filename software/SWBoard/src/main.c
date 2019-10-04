@@ -133,8 +133,10 @@ int main(void)
     }
 
     // check turn off
-    if (turn_off)
+    if (turn_off == 1)
     {
+      turn_off = 0;
+
       HAL_GPIO_WritePin(PRECHARGE_POS_GPIO_Port, PRECHARGE_POS_Pin, GPIO_PIN_RESET);
       HAL_GPIO_WritePin(PRECHARGE_NEG_GPIO_Port, PRECHARGE_NEG_Pin, GPIO_PIN_RESET);
       HAL_GPIO_WritePin(SW_POS_GPIO_Port, SW_POS_Pin, GPIO_PIN_RESET);
