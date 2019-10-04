@@ -29,8 +29,9 @@
 
 /* Private define ------------------------------------------------------------*/
 
-#define CAN_MSG_1 0x123
-#define CAN_MSG_2 0x234
+#define CAN_ID_PRECHARGE 0x6F7
+
+#define PRECHARGE_TIME 3000
 
 /* Private macro -------------------------------------------------------------*/
 
@@ -51,11 +52,20 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
   uint8_t data[8] = {};
   HAL_CAN_GetRxMessage(&hcan1, CAN_RX_FIFO0, &header, data);
 
-  if (header.StdId == CAN_MSG_1)
+  if (header.StdId != CAN_ID_PRECHARGE)
+  {
+    // something went wrong the filter?
+    // ignore packet
+    return;
+  }
+
+  // https://drive.google.com/file/d/13xNdZU3iHUccOYC51neVvtTOsEyVUbjg/view
+
+  if (data[1] == 4)
   {
     do_precharge = 1;
   }
-  else if (header.StdId == CAN_MSG_2)
+  else
   {
     turn_off = 1;
   }
@@ -88,8 +98,8 @@ int main(void)
   sFilterConfig.FilterBank = 0;
   sFilterConfig.FilterMode = CAN_FILTERMODE_IDLIST;
   sFilterConfig.FilterScale = CAN_FILTERSCALE_16BIT;
-  sFilterConfig.FilterIdHigh = CAN_MSG_1;
-  sFilterConfig.FilterIdLow = CAN_MSG_2;
+  sFilterConfig.FilterIdHigh = CAN_ID_PRECHARGE;
+  sFilterConfig.FilterIdLow = CAN_ID_PRECHARGE;
   sFilterConfig.FilterMaskIdHigh = 0xFFFFFFFF;
   sFilterConfig.FilterMaskIdLow = 0xFFFFFFFF;
   sFilterConfig.FilterFIFOAssignment = 0;
@@ -125,10 +135,17 @@ int main(void)
     {
       do_precharge = 0;
 
+      // process is
+      // - turn precharge reed relay on
+      // - wait for PRECHARGE_TIME ms
+      // - turn on tactor
+      // - wait for a few ms of overlap???
+      // - turn the precharge reed relay off
+
       HAL_GPIO_WritePin(PRECHARGE_POS_GPIO_Port, PRECHARGE_POS_Pin, GPIO_PIN_SET);
-      HAL_DELAY(3000);
+      HAL_Delay(PRECHARGE_TIME);
       HAL_GPIO_WritePin(SW_POS_GPIO_Port, SW_POS_Pin, GPIO_PIN_SET);
-      delay(10);
+      HAL_Delay(10);
       HAL_GPIO_WritePin(PRECHARGE_POS_GPIO_Port, PRECHARGE_POS_Pin, GPIO_PIN_RESET);
     }
 
@@ -136,6 +153,8 @@ int main(void)
     if (turn_off == 1)
     {
       turn_off = 0;
+
+      // pull all IO low to turn off both the relays
 
       HAL_GPIO_WritePin(PRECHARGE_POS_GPIO_Port, PRECHARGE_POS_Pin, GPIO_PIN_RESET);
       HAL_GPIO_WritePin(PRECHARGE_NEG_GPIO_Port, PRECHARGE_NEG_Pin, GPIO_PIN_RESET);
