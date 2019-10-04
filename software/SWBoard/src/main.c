@@ -1,4 +1,4 @@
-/* USER CODE BEGIN Header */
+
 /**
   ******************************************************************************
   * @file           : main.c
@@ -16,49 +16,50 @@
   *
   ******************************************************************************
   */
-/* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "can.h"
+#include "iwdg.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
 
-/* USER CODE END PD */
+#define CAN_MSG_1 0x123
+#define CAN_MSG_2 0x234
 
 /* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
 
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
+volatile uint8_t do_precharge = 0;
+volatile uint8_t turn_off = 0;
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-/* USER CODE BEGIN PFP */
-
-/* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
 
-/* USER CODE END 0 */
+// fifo0 interrupt handler
+void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
+{
+  CAN_RxHeaderTypeDef header;
+  uint8_t data[8] = {};
+  HAL_CAN_GetRxMessage(&hcan1, CAN_RX_FIFO0, &header, data);
+
+  if (header.StdId == CAN_MSG_1)
+  {
+    do_precharge = 1;
+  }
+  else if (header.StdId == CAN_MSG_2)
+  {
+    turn_off = 1;
+  }
+}
 
 /**
   * @brief  The application entry point.
@@ -66,45 +67,80 @@ void SystemClock_Config(void);
   */
 int main(void)
 {
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
   /* Configure the system clock */
   SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_CAN1_Init();
-  /* USER CODE BEGIN 2 */
+  MX_IWDG_Init();
 
-  /* USER CODE END 2 */
+  // set up a can filter for ids
+  // http://schulz-m.github.io/2017/03/23/stm32-can-id-filter/
+  // http://www.cse.dmu.ac.uk/~eg/tele/CanbusIDandMask.html
+  CAN_FilterTypeDef sFilterConfig = {};
+  sFilterConfig.FilterBank = 0;
+  sFilterConfig.FilterMode = CAN_FILTERMODE_IDLIST;
+  sFilterConfig.FilterScale = CAN_FILTERSCALE_16BIT;
+  sFilterConfig.FilterIdHigh = CAN_MSG_1;
+  sFilterConfig.FilterIdLow = CAN_MSG_2;
+  sFilterConfig.FilterMaskIdHigh = 0xFFFFFFFF;
+  sFilterConfig.FilterMaskIdLow = 0xFFFFFFFF;
+  sFilterConfig.FilterFIFOAssignment = 0;
+  sFilterConfig.FilterActivation = ENABLE;
+  if (HAL_CAN_ConfigFilter(&hcan1, &sFilterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  // start can
+  if (HAL_CAN_Start(&hcan1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  // activate fifo notifications
+  if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
+  {
+    Error_Handler();
+  }
 
   /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
 
-    HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-    HAL_Delay(1000);
+    // refresh the watchdog
+    HAL_IWDG_Refresh(&hiwdg);
+    // sleep for a ms
+    HAL_Delay(1);
 
-    /* USER CODE BEGIN 3 */
+    // check precharge
+    if (do_precharge == 1)
+    {
+      do_precharge = 0;
+
+      HAL_GPIO_WritePin(PRECHARGE_POS_GPIO_Port, PRECHARGE_POS_Pin, GPIO_PIN_SET);
+      HAL_DELAY(3000);
+      HAL_GPIO_WritePin(SW_POS_GPIO_Port, SW_POS_Pin, GPIO_PIN_SET);
+      delay(10);
+      HAL_GPIO_WritePin(PRECHARGE_POS_GPIO_Port, PRECHARGE_POS_Pin, GPIO_PIN_RESET);
+    }
+
+    // check turn off
+    if (turn_off)
+    {
+      HAL_GPIO_WritePin(PRECHARGE_POS_GPIO_Port, PRECHARGE_POS_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(PRECHARGE_NEG_GPIO_Port, PRECHARGE_NEG_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(SW_POS_GPIO_Port, SW_POS_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(SW_NEG_GPIO_Port, SW_NEG_Pin, GPIO_PIN_RESET);
+    }
   }
-  /* USER CODE END 3 */
 }
 
 /**
@@ -122,8 +158,9 @@ void SystemClock_Config(void)
   __HAL_RCC_LSEDRIVE_CONFIG(RCC_LSEDRIVE_LOW);
   /** Initializes the CPU, AHB and APB busses clocks 
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSE | RCC_OSCILLATORTYPE_MSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI | RCC_OSCILLATORTYPE_LSE | RCC_OSCILLATORTYPE_MSI;
   RCC_OscInitStruct.LSEState = RCC_LSE_ON;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.MSIState = RCC_MSI_ON;
   RCC_OscInitStruct.MSICalibrationValue = 0;
   RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;
@@ -161,49 +198,14 @@ void SystemClock_Config(void)
   HAL_RCCEx_EnableMSIPLLMode();
 }
 
-/* USER CODE BEGIN 4 */
-
-/* USER CODE END 4 */
-
 /**
   * @brief  This function is executed in case of error occurrence.
   * @retval None
   */
 void Error_Handler(void)
 {
-  /* USER CODE BEGIN Error_Handler_Debug */
+
   /* User can add his own implementation to report the HAL error return state */
-
-  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-  while (1)
-  {
-    for (int i = 0; i < 3; i++)
-    {
-      HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-      HAL_Delay(100);
-      HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-      HAL_Delay(100);
-    }
-    HAL_Delay(200);
-    for (int i = 0; i < 3; i++)
-    {
-      HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-      HAL_Delay(300);
-      HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-      HAL_Delay(100);
-    }
-    HAL_Delay(200);
-    for (int i = 0; i < 3; i++)
-    {
-      HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-      HAL_Delay(100);
-      HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-      HAL_Delay(100);
-    }
-    HAL_Delay(1000);
-  }
-
-  /* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef USE_FULL_ASSERT
@@ -216,10 +218,9 @@ void Error_Handler(void)
   */
 void assert_failed(char *file, uint32_t line)
 {
-  /* USER CODE BEGIN 6 */
+
   /* User can add his own implementation to report the file name and line number,
      tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
 
