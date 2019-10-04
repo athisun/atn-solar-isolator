@@ -200,14 +200,38 @@ void SystemClock_Config(void)
   HAL_RCCEx_EnableMSIPLLMode();
 }
 
+void blinky(uint8_t n, uint32_t delay1, uint32_t delay2, uint32_t delay3)
+{
+  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+  for (uint8_t i = 0; i < n; i++)
+  {
+    HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+    HAL_Delay(delay1);
+    HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+    HAL_Delay(delay2);
+  }
+  HAL_Delay(delay3);
+}
+
 /**
   * @brief  This function is executed in case of error occurrence.
   * @retval None
   */
 void Error_Handler(void)
 {
-
   /* User can add his own implementation to report the HAL error return state */
+
+  // blink sos a few times
+  for (uint8_t i = 0; i < 5; i++)
+  {
+    // blink sos
+    blinky(3, 100, 100, 200);
+    blinky(3, 300, 100, 200);
+    blinky(3, 100, 100, 1000);
+  }
+
+  // then start a reset
+  HAL_NVIC_SystemReset();
 }
 
 #ifdef USE_FULL_ASSERT
