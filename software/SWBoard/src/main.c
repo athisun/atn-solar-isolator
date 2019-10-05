@@ -19,7 +19,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "can.h"
+// #include "can.h"
 #include "iwdg.h"
 #include "gpio.h"
 
@@ -29,15 +29,15 @@
 
 /* Private define ------------------------------------------------------------*/
 
-#define CAN_ID_PRECHARGE 0x6F7
+// #define CAN_ID_PRECHARGE 0x6F7
 
-#define PRECHARGE_TIME 3000
+#define PRECHARGE_TIME 5000
 
 /* Private macro -------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
 
-volatile uint8_t do_precharge = 0;
+volatile uint8_t do_precharge = 1;
 volatile uint8_t turn_off = 0;
 
 /* Private function prototypes -----------------------------------------------*/
@@ -46,30 +46,30 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 
 // fifo0 interrupt handler
-void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
-{
-  CAN_RxHeaderTypeDef header;
-  uint8_t data[8] = {};
-  HAL_CAN_GetRxMessage(&hcan1, CAN_RX_FIFO0, &header, data);
+// void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
+// {
+//   CAN_RxHeaderTypeDef header;
+//   uint8_t data[8] = {};
+//   HAL_CAN_GetRxMessage(&hcan1, CAN_RX_FIFO0, &header, data);
 
-  if (header.StdId != CAN_ID_PRECHARGE)
-  {
-    // something went wrong the filter?
-    // ignore packet
-    return;
-  }
+//   if (header.StdId != CAN_ID_PRECHARGE)
+//   {
+//     // something went wrong the filter?
+//     // ignore packet
+//     return;
+//   }
 
-  // https://drive.google.com/file/d/13xNdZU3iHUccOYC51neVvtTOsEyVUbjg/view
+//   // https://drive.google.com/file/d/13xNdZU3iHUccOYC51neVvtTOsEyVUbjg/view
 
-  if (data[1] == 4)
-  {
-    do_precharge = 1;
-  }
-  else
-  {
-    turn_off = 1;
-  }
-}
+//   if (data[1] == 4)
+//   {
+//     do_precharge = 1;
+//   }
+//   else
+//   {
+//     turn_off = 1;
+//   }
+// }
 
 /**
   * @brief  The application entry point.
@@ -88,38 +88,38 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_CAN1_Init();
+  // MX_CAN1_Init();
   MX_IWDG_Init();
 
-  // set up a can filter for ids
-  // http://schulz-m.github.io/2017/03/23/stm32-can-id-filter/
-  // http://www.cse.dmu.ac.uk/~eg/tele/CanbusIDandMask.html
-  CAN_FilterTypeDef sFilterConfig = {};
-  sFilterConfig.FilterBank = 0;
-  sFilterConfig.FilterMode = CAN_FILTERMODE_IDLIST;
-  sFilterConfig.FilterScale = CAN_FILTERSCALE_16BIT;
-  sFilterConfig.FilterIdHigh = CAN_ID_PRECHARGE;
-  sFilterConfig.FilterIdLow = CAN_ID_PRECHARGE;
-  sFilterConfig.FilterMaskIdHigh = 0xFFFFFFFF;
-  sFilterConfig.FilterMaskIdLow = 0xFFFFFFFF;
-  sFilterConfig.FilterFIFOAssignment = 0;
-  sFilterConfig.FilterActivation = ENABLE;
-  if (HAL_CAN_ConfigFilter(&hcan1, &sFilterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
+  // // set up a can filter for ids
+  // // http://schulz-m.github.io/2017/03/23/stm32-can-id-filter/
+  // // http://www.cse.dmu.ac.uk/~eg/tele/CanbusIDandMask.html
+  // CAN_FilterTypeDef sFilterConfig = {};
+  // sFilterConfig.FilterBank = 0;
+  // sFilterConfig.FilterMode = CAN_FILTERMODE_IDLIST;
+  // sFilterConfig.FilterScale = CAN_FILTERSCALE_16BIT;
+  // sFilterConfig.FilterIdHigh = CAN_ID_PRECHARGE;
+  // sFilterConfig.FilterIdLow = CAN_ID_PRECHARGE;
+  // sFilterConfig.FilterMaskIdHigh = 0xFFFFFFFF;
+  // sFilterConfig.FilterMaskIdLow = 0xFFFFFFFF;
+  // sFilterConfig.FilterFIFOAssignment = 0;
+  // sFilterConfig.FilterActivation = ENABLE;
+  // if (HAL_CAN_ConfigFilter(&hcan1, &sFilterConfig) != HAL_OK)
+  // {
+  //   Error_Handler();
+  // }
 
-  // start can
-  if (HAL_CAN_Start(&hcan1) != HAL_OK)
-  {
-    Error_Handler();
-  }
+  // // start can
+  // if (HAL_CAN_Start(&hcan1) != HAL_OK)
+  // {
+  //   Error_Handler();
+  // }
 
-  // activate fifo notifications
-  if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
-  {
-    Error_Handler();
-  }
+  // // activate fifo notifications
+  // if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
+  // {
+  //   Error_Handler();
+  // }
 
   /* Infinite loop */
   while (1)
@@ -173,11 +173,11 @@ void SystemClock_Config(void)
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  /** Configure LSE Drive Capability 
+  /** Configure LSE Drive Capability
   */
   HAL_PWR_EnableBkUpAccess();
   __HAL_RCC_LSEDRIVE_CONFIG(RCC_LSEDRIVE_LOW);
-  /** Initializes the CPU, AHB and APB busses clocks 
+  /** Initializes the CPU, AHB and APB busses clocks
   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI | RCC_OSCILLATORTYPE_LSE | RCC_OSCILLATORTYPE_MSI;
   RCC_OscInitStruct.LSEState = RCC_LSE_ON;
@@ -196,7 +196,7 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  /** Initializes the CPU, AHB and APB busses clocks 
+  /** Initializes the CPU, AHB and APB busses clocks
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
@@ -208,13 +208,13 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  /** Configure the main internal regulator output voltage 
+  /** Configure the main internal regulator output voltage
   */
   if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK)
   {
     Error_Handler();
   }
-  /** Enable MSI Auto calibration 
+  /** Enable MSI Auto calibration
   */
   HAL_RCCEx_EnableMSIPLLMode();
 }
