@@ -124,7 +124,6 @@ int main(void)
   /* Infinite loop */
   while (1)
   {
-
     // refresh the watchdog
     HAL_IWDG_Refresh(&hiwdg);
     // sleep for a ms
@@ -135,7 +134,6 @@ int main(void)
     {
       do_precharge = 0;
 
-      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
       HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
 
       // process is
@@ -146,10 +144,12 @@ int main(void)
       // - turn the precharge reed relay off
 
       HAL_GPIO_WritePin(PRECHARGE_POS_GPIO_Port, PRECHARGE_POS_Pin, GPIO_PIN_SET);
+      HAL_GPIO_WritePin(PRECHARGE_NEG_GPIO_Port, PRECHARGE_NEG_Pin, GPIO_PIN_SET);
       HAL_Delay(PRECHARGE_TIME);
       HAL_GPIO_WritePin(SW_POS_GPIO_Port, SW_POS_Pin, GPIO_PIN_SET);
       HAL_Delay(10);
       HAL_GPIO_WritePin(PRECHARGE_POS_GPIO_Port, PRECHARGE_POS_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(PRECHARGE_NEG_GPIO_Port, PRECHARGE_NEG_Pin, GPIO_PIN_RESET);
 
       HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
     }
