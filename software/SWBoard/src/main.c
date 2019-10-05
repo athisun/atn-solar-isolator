@@ -91,32 +91,32 @@ int main(void)
   // MX_CAN1_Init();
   MX_IWDG_Init();
 
+  HAL_GPIO_WritePin(PRECHARGE_NEG_GPIO_Port, PRECHARGE_NEG_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(SW_NEG_GPIO_Port, SW_NEG_Pin, GPIO_PIN_RESET);
+
   /* Infinite loop */
   while (1)
   {
     // busy loop
     HAL_Delay(1000);
 
-      // turn the led on
+    // turn the led on
     HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
 
     // pull the precharge pins the right way
     HAL_GPIO_WritePin(PRECHARGE_POS_GPIO_Port, PRECHARGE_POS_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(PRECHARGE_NEG_GPIO_Port, PRECHARGE_NEG_Pin, GPIO_PIN_RESET);
 
     // wait for the precharge time
     HAL_Delay(PRECHARGE_TIME);
 
     // turn on the tactor
     HAL_GPIO_WritePin(SW_POS_GPIO_Port, SW_POS_Pin, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(SW_NEG_GPIO_Port, SW_NEG_Pin, GPIO_PIN_RESET);
 
     // small overlap delay
     HAL_Delay(10);
 
     // disable precharge
     HAL_GPIO_WritePin(PRECHARGE_POS_GPIO_Port, PRECHARGE_POS_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(PRECHARGE_NEG_GPIO_Port, PRECHARGE_NEG_Pin, GPIO_PIN_RESET);
 
     // turn the led off
     HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
