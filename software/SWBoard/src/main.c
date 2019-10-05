@@ -135,6 +135,9 @@ int main(void)
     {
       do_precharge = 0;
 
+      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
+      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+
       // process is
       // - turn precharge reed relay on
       // - wait for PRECHARGE_TIME ms
@@ -147,6 +150,8 @@ int main(void)
       HAL_GPIO_WritePin(SW_POS_GPIO_Port, SW_POS_Pin, GPIO_PIN_SET);
       HAL_Delay(10);
       HAL_GPIO_WritePin(PRECHARGE_POS_GPIO_Port, PRECHARGE_POS_Pin, GPIO_PIN_RESET);
+
+      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
     }
 
     // check turn off
