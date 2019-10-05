@@ -91,81 +91,35 @@ int main(void)
   // MX_CAN1_Init();
   MX_IWDG_Init();
 
-  // // set up a can filter for ids
-  // // http://schulz-m.github.io/2017/03/23/stm32-can-id-filter/
-  // // http://www.cse.dmu.ac.uk/~eg/tele/CanbusIDandMask.html
-  // CAN_FilterTypeDef sFilterConfig = {};
-  // sFilterConfig.FilterBank = 0;
-  // sFilterConfig.FilterMode = CAN_FILTERMODE_IDLIST;
-  // sFilterConfig.FilterScale = CAN_FILTERSCALE_16BIT;
-  // sFilterConfig.FilterIdHigh = CAN_ID_PRECHARGE;
-  // sFilterConfig.FilterIdLow = CAN_ID_PRECHARGE;
-  // sFilterConfig.FilterMaskIdHigh = 0xFFFFFFFF;
-  // sFilterConfig.FilterMaskIdLow = 0xFFFFFFFF;
-  // sFilterConfig.FilterFIFOAssignment = 0;
-  // sFilterConfig.FilterActivation = ENABLE;
-  // if (HAL_CAN_ConfigFilter(&hcan1, &sFilterConfig) != HAL_OK)
-  // {
-  //   Error_Handler();
-  // }
+    // turn the led on
+  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
 
-  // // start can
-  // if (HAL_CAN_Start(&hcan1) != HAL_OK)
-  // {
-  //   Error_Handler();
-  // }
+  // pull the precharge pins the right way
+  HAL_GPIO_WritePin(PRECHARGE_POS_GPIO_Port, PRECHARGE_POS_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(PRECHARGE_NEG_GPIO_Port, PRECHARGE_NEG_Pin, GPIO_PIN_RESET);
 
-  // // activate fifo notifications
-  // if (HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
-  // {
-  //   Error_Handler();
-  // }
+  // wait for the precharge time
+  HAL_Delay(PRECHARGE_TIME);
+
+  // turn on the tactor
+  HAL_GPIO_WritePin(SW_POS_GPIO_Port, SW_POS_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(SW_NEG_GPIO_Port, SW_NEG_Pin, GPIO_PIN_RESET);
+
+  // small overlap delay
+  HAL_Delay(10);
+
+  // disable precharge
+  HAL_GPIO_WritePin(PRECHARGE_POS_GPIO_Port, PRECHARGE_POS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(PRECHARGE_NEG_GPIO_Port, PRECHARGE_NEG_Pin, GPIO_PIN_RESET);
+
+  // turn the led off
+  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 
   /* Infinite loop */
   while (1)
   {
-    // refresh the watchdog
-    HAL_IWDG_Refresh(&hiwdg);
-    // sleep for a ms
-    HAL_Delay(1);
-
-    // check precharge
-    if (do_precharge == 1)
-    {
-      do_precharge = 0;
-
-      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-
-      // process is
-      // - turn precharge reed relay on
-      // - wait for PRECHARGE_TIME ms
-      // - turn on tactor
-      // - wait for a few ms of overlap???
-      // - turn the precharge reed relay off
-
-      HAL_GPIO_WritePin(PRECHARGE_POS_GPIO_Port, PRECHARGE_POS_Pin, GPIO_PIN_SET);
-      HAL_GPIO_WritePin(PRECHARGE_NEG_GPIO_Port, PRECHARGE_NEG_Pin, GPIO_PIN_SET);
-      HAL_Delay(PRECHARGE_TIME);
-      HAL_GPIO_WritePin(SW_POS_GPIO_Port, SW_POS_Pin, GPIO_PIN_SET);
-      HAL_Delay(10);
-      HAL_GPIO_WritePin(PRECHARGE_POS_GPIO_Port, PRECHARGE_POS_Pin, GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(PRECHARGE_NEG_GPIO_Port, PRECHARGE_NEG_Pin, GPIO_PIN_RESET);
-
-      HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-    }
-
-    // check turn off
-    if (turn_off == 1)
-    {
-      turn_off = 0;
-
-      // pull all IO low to turn off both the relays
-
-      HAL_GPIO_WritePin(PRECHARGE_POS_GPIO_Port, PRECHARGE_POS_Pin, GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(PRECHARGE_NEG_GPIO_Port, PRECHARGE_NEG_Pin, GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(SW_POS_GPIO_Port, SW_POS_Pin, GPIO_PIN_RESET);
-      HAL_GPIO_WritePin(SW_NEG_GPIO_Port, SW_NEG_Pin, GPIO_PIN_RESET);
-    }
+    // busy loop
+    HAL_Delay(1000);
   }
 }
 
